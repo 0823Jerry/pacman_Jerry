@@ -23,6 +23,7 @@ const fps = 50;
 const blockSize = 50;
 const boundaries = [];
 const foods = [];
+const enemies = []; 
 const map = [['1', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '2'],
              ['|', '.', '.', '.', '.', '.', '.', '|', '.', '.', '.', '|'],
              ['|', '.', '^', '.', '^', '.', '.', '|', '.', '^', '.', '|'],
@@ -38,6 +39,75 @@ const map = [['1', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '2'],
 canvas.width = map[0].length * blockSize;
 canvas.height = map.length * blockSize;
 
+const marks = document.querySelector(".score")
+let scores = 0
+
+class Ball{
+    constructor(pos, radius){
+        this.pos = pos
+        this.radius = radius
+        this.color = "yellow"
+    }
+    draw(){
+        ctx.beginPath()
+        ctx.arc(this.pos.x, this.pos.y, this.radius, 0, Math.PI * 2)
+        ctx.fillStyle = this.color;
+        ctx.fill()
+        ctx.closePath()
+    }
+}
+class Enemy extends Ball{
+    constructor(pos, radius){
+        super(pos, radius)
+        this.direction = 'right'
+        this.speed = 2
+        this.previousX = this.pos.x
+        this.previousY = this.pos.y
+    }
+    move(){
+        this.previousX = this.pos.x
+        this.previousY = this.pos.y
+        if(this.direction == 'right'){
+            this.pos.x += this.speed
+        }
+        else if(this.direction == 'left'){
+            this.pos.x -= this.speed
+        }
+        else if(this.direction == 'up'){
+            this.pos.y -= this.speed
+        }
+        else{
+            this.pos.y += this.speed
+        }
+        for(let i in boundaries){
+            if(isTouching(this.pos.x - this.radius, 
+                this.pos.x + this.radius, 
+                boundaries[i].pos.x, 
+                boundaries[i].pos.x + blockSize, 
+                this.pos.y - this.radius, 
+                this.pos.y + this.radius,
+                boundaries[i].pos.y,
+                boundaries[i].pos.y + blockSize)){
+                this.pos.x = this.previousX
+                this.pos.y = this.previousY
+                let A = Math.floor(Math.random() * 4)
+                if(A == 0){
+                    this.direction = 'up'
+                }
+                else if(A == 1){
+                    this.direction = 'down'
+                }
+                else if(A == 2){
+                    this.direction = 'left'
+                }
+                else{
+                    this.direction = 'right'
+                }
+                console.log(A, this.direction)
+            }
+        }
+}
+}
 class Boundary{
     constructor(pos, src){
         this.pos = pos
@@ -49,36 +119,21 @@ class Boundary{
     }
 }
 
-class Food{
+class Food extends Ball{
     constructor(pos, radius){
-        this.pos = pos
-        this.radius = radius
+        super(pos, radius)
     }
-    draw(){
-        ctx.beginPath()
-        ctx.arc(this.pos.x, this.pos.y, this.radius, 0, Math.PI * 2)
-        ctx.fillStyle = 'yellow';
-        ctx.fill()
-        ctx.closePath()
-    }
+    
 }
 
-class Player{
+class Player extends Ball{
     constructor(pos, radius){
-        this.pos = pos
-        this.radius = radius
+        super(pos, radius)
         this.direction = 'right'
         this.nextDirection = ''
         this.speed = 2
         this.previousX = this.pos.x
         this.previousY = this.pos.y
-    }
-    draw(){
-        ctx.beginPath()
-        ctx.arc(this.pos.x, this.pos.y, this.radius, 0, Math.PI * 2)
-        ctx.fillStyle = 'yellow';
-        ctx.fill()
-        ctx.closePath()
     }
     
     move(){
@@ -107,6 +162,20 @@ class Player{
                 boundaries[i].pos.y + blockSize)){
                 this.pos.x = this.previousX
                 this.pos.y = this.previousY
+            }
+        }
+        for(let i in foods){
+            if(isTouching(this.pos.x - this.radius, 
+                this.pos.x + this.radius, 
+                foods[i].pos.x - foods[i].radius,
+                foods[i].pos.x + foods[i].radius, 
+                this.pos.y - this.radius, 
+                this.pos.y + this.radius,
+                foods[i].pos.y - foods[i].radius,
+                foods[i].pos.y + foods[i].radius)){
+                foods.splice(i, 1)
+                scores += 1
+                marks.textContent = `Score: ${scores}`
             }
         }
     }
@@ -156,6 +225,11 @@ function draw(){
         foods[l].draw()
     }
 
+    for(let m in enemies){
+        enemies[m].draw()
+        enemies[m].move()
+    }
+
     player.draw()
     player.move()
     player.changeDirection()
@@ -171,6 +245,10 @@ for(let i in map){
         foods.push(new Food({x: blockSize * j + blockSize / 2, y: blockSize * i + blockSize / 2}, blockSize / 10))
         }
     }
+}
+
+for(var B = 0; B < 3; B++){
+    enemies.push(new Enemy({x: blockSize* 3 + blockSize / 2, y: blockSize*3 + blockSize / 2}, blockSize / 3))
 }
 
 const player = new Player({x: blockSize + blockSize / 2, y: blockSize + blockSize / 2}, blockSize / 3)
@@ -189,3 +267,4 @@ document.addEventListener('keydown', (e) => {
     }
 })
 setInterval(draw, 1000 / fps)
+
